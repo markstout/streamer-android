@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.markstouttech.streamer.data.local.dao.EpisodeDao
 import com.markstouttech.streamer.data.local.dao.TitleDao
 import com.markstouttech.streamer.data.local.entities.TitleEntity
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -14,6 +15,13 @@ class DashboardViewModel(
     private val titleDao: TitleDao,
     private val episodeDao: EpisodeDao
 ) : ViewModel() {
+
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing
+
+    fun setSyncing(syncing: Boolean) {
+        _isSyncing.value = syncing
+    }
 
     val titles: StateFlow<List<TitleEntity>> = titleDao.getAllTitles()
         .stateIn(

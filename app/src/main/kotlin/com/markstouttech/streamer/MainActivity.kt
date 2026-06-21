@@ -19,6 +19,7 @@ import com.markstouttech.streamer.ui.dashboard.DashboardScreen
 import com.markstouttech.streamer.ui.dashboard.viewmodel.DashboardViewModel
 import com.markstouttech.streamer.ui.detail.DetailScreen
 import com.markstouttech.streamer.ui.search.SearchScreen
+import com.markstouttech.streamer.ui.search.viewmodel.SearchViewModel
 import com.markstouttech.streamer.ui.theme.StreamerTheme
 
 class MainActivity : ComponentActivity() {
@@ -52,9 +53,10 @@ class MainActivity : ComponentActivity() {
                     if (account == null) {
                         LoginScreen { launcher.launch(authManager.getGoogleSignInClient().signInIntent) }
                     } else {
-                        StreamerApp(viewModel = viewModel { 
-                            DashboardViewModel(database.titleDao(), database.episodeDao()) 
-                        })
+                        StreamerApp(
+                            viewModel = viewModel { DashboardViewModel(database.titleDao(), database.episodeDao()) },
+                            database = database
+                        )
                     }
                 }
             }
@@ -72,7 +74,7 @@ fun LoginScreen(onLoginClick: () -> Unit) {
 }
 
 @Composable
-fun StreamerApp(viewModel: DashboardViewModel) {
+fun StreamerApp(viewModel: DashboardViewModel, database: com.markstouttech.streamer.data.local.AppDatabase) {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Dashboard) }
     var selectedTitle by remember { mutableStateOf<TitleEntity?>(null) }
     val titles by viewModel.titles.collectAsState()
@@ -83,6 +85,7 @@ fun StreamerApp(viewModel: DashboardViewModel) {
                 viewModel = viewModel,
                 titles = titles,
                 onAddClick = { currentScreen = Screen.Search },
+                onSearchClick = { currentScreen = Screen.Search },
                 onTitleClick = { title ->
                     selectedTitle = title
                     currentScreen = Screen.Detail
@@ -91,8 +94,8 @@ fun StreamerApp(viewModel: DashboardViewModel) {
         }
         is Screen.Search -> {
             SearchScreen(
-                onBackClick = { currentScreen = Screen.Dashboard },
-                onAddTitle = { /* TODO */ }
+                viewModel = viewModel { SearchViewModel(database.titleDao(), database.episodeDao()) },
+                onBackClick = { currentScreen = Screen.Dashboard }
             )
         }
         is Screen.Detail -> {

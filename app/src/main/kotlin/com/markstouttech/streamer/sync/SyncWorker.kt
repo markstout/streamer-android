@@ -35,11 +35,13 @@ class SyncWorker(
             Log.d("SyncWorker", "Fetched ${remoteTitles.size} titles and ${remoteEpisodes.size} episodes")
 
             // 2. Sync Titles
-            remoteTitles.forEach { row ->
-                if (row.size >= 2) {
+            Log.d("SyncWorker", "Syncing ${remoteTitles.size} remote titles")
+            remoteTitles.forEachIndexed { index, row ->
+                if (row.isNotEmpty()) {
+                    Log.d("SyncWorker", "Processing title row $index: $row")
                     val title = TitleEntity(
-                        id = row.getOrNull(0)?.toString() ?: "",
-                        title = row.getOrNull(1)?.toString() ?: "",
+                        id = row.getOrNull(0)?.toString() ?: return@forEachIndexed,
+                        title = row.getOrNull(1)?.toString() ?: "Unknown",
                         type = row.getOrNull(2)?.toString() ?: "TV",
                         status = row.getOrNull(3)?.toString() ?: "Plan to Watch",
                         subscribed = row.getOrNull(4)?.toString()?.equals("TRUE", ignoreCase = true) ?: false,
@@ -57,11 +59,11 @@ class SyncWorker(
             }
 
             // 3. Sync Episodes
-            remoteEpisodes.forEach { row ->
-                if (row.size >= 2) {
+            remoteEpisodes.forEachIndexed { index, row ->
+                if (row.isNotEmpty()) {
                     val episode = EpisodeEntity(
-                        id = row.getOrNull(0)?.toString() ?: "",
-                        titleId = row.getOrNull(1)?.toString() ?: "",
+                        id = row.getOrNull(0)?.toString() ?: return@forEachIndexed,
+                        titleId = row.getOrNull(1)?.toString() ?: return@forEachIndexed,
                         season = row.getOrNull(2)?.toString()?.toIntOrNull() ?: 1,
                         episodeNumber = row.getOrNull(3)?.toString()?.toIntOrNull() ?: 1,
                         episodeTitle = row.getOrNull(4)?.toString() ?: "",

@@ -13,15 +13,17 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.markstouttech.streamer.data.local.entities.TitleEntity
 import com.markstouttech.streamer.ui.components.TitleCard
 import com.markstouttech.streamer.ui.dashboard.viewmodel.DashboardViewModel
 import com.markstouttech.streamer.util.BuildUtils
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.compose.ui.platform.LocalContext
 import com.markstouttech.streamer.sync.SyncWorker
 import kotlinx.coroutines.launch
 
@@ -31,6 +33,7 @@ fun DashboardScreen(
     viewModel: DashboardViewModel,
     titles: List<TitleEntity>,
     onAddClick: () -> Unit,
+    onSearchClick: () -> Unit,
     onTitleClick: (TitleEntity) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -40,6 +43,13 @@ fun DashboardScreen(
     val titleCount by viewModel.titleCount.collectAsState()
     val watchedCount by viewModel.watchedCount.collectAsState()
     val unavailableCount by viewModel.unavailableCount.collectAsState()
+    
+    val context = LocalContext.current
+    val workInfos by WorkManager.getInstance(context)
+        .getWorkInfosByTagLiveData("com.markstouttech.streamer.sync.SyncWorker")
+        .observeAsState()
+    
+    val isSyncing = workInfos?.any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED } == true
 
     if (showAboutDialog) {
         AlertDialog(
@@ -60,8 +70,6 @@ fun DashboardScreen(
             }
         )
     }
-
-    val context = LocalContext.current
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -115,16 +123,18 @@ fun DashboardScreen(
                         }
                     },
                     actions = {
-                    IconButton(onClick = { 
-                        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>().build()
-                        WorkManager.getInstance(context).enqueue(syncRequest)
-                    }) {
-                        Icon(Icons.Default.Sync, contentDescription = "Sync")
+                        IconButton(onClick = { 
+                            val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+                                .addTag("com.markstouttech.streamer.sync.SyncWorker")
+                                .build()
+                            WorkManager.getInstance(context).enqueue(syncRequest)
+                        }) {
+                            Icon(Icons.Default.Sync, contentDescription = "Sync")
+                        }
+                        IconButton(onClick = onSearchClick) {
+                            Icon(Icons.Default.Search, contentDescription = "Search")
+                        }
                     }
-                    IconButton(onClick = { /* TODO: Search */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
-                    }
-                }
                 )
             },
             floatingActionButton = {
@@ -134,6 +144,9 @@ fun DashboardScreen(
             }
         ) { padding ->
             Column(modifier = Modifier.padding(padding)) {
+                if (isSyncing) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     contentPadding = PaddingValues(8.dp),
