@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.markstouttech.streamer"
+    namespace = "com.markstouttech.stream"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.markstouttech.streamer"
+        applicationId = "com.markstouttech.stream"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
